@@ -689,6 +689,8 @@ export const PicksScreen = ({
         },
       }));
     }
+    // Reset selected round to 0 when tournament changes
+    setSelectedRound(0);
   }, [tournament]);
 
   const handleRoundSelect = (index: number) => {

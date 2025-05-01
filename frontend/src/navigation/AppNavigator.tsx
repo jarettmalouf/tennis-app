@@ -15,28 +15,93 @@ import LegalScreen from "../screens/LegalScreen";
 import LoginScreen from "../screens/LoginScreen";
 import { PicksScreen } from "../screens/PicksScreen";
 import { ProfileScreen } from "../screens/ProfileScreen";
-import React from "react";
+import React, { useState } from "react";
 import SignupScreen from "../screens/SignupScreen";
 import StandingsScreen from "../screens/StandingsScreen";
 import { TournamentsScreen } from "../screens/TournamentsScreen";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
+import { View, TouchableOpacity, StyleSheet } from "react-native";
 
 // Create navigators
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
-const Tab = createBottomTabNavigator<MainTabParamList>();
 const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
 
-// Auth Navigator
-const AuthNavigator = () => {
+// Custom Tab Bar Component
+const CustomTabBar = ({ state, navigation }: any) => {
+  const { theme } = useTheme();
+  const [activeTab, setActiveTab] = useState(state.index);
+
+  const getIconName = (routeName: string, isFocused: boolean) => {
+    switch (routeName) {
+      case "Tournaments":
+        return isFocused ? "trophy" : "trophy-outline";
+      case "Profile":
+        return isFocused ? "person" : "person-outline";
+      case "Picks":
+        return isFocused ? "list" : "list-outline";
+      case "Standings":
+        return isFocused ? "stats-chart" : "stats-chart-outline";
+      default:
+        return "help";
+    }
+  };
+
   return (
-    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
-      <AuthStack.Screen name="Login" component={LoginScreen} />
-      <AuthStack.Screen name="Signup" component={SignupScreen} />
-    </AuthStack.Navigator>
+    <View
+      style={[
+        styles.tabBar,
+        {
+          backgroundColor: theme.colors.background,
+          borderTopColor: theme.colors.border,
+        },
+      ]}
+    >
+      {state.routes.map((route: any, index: number) => {
+        const isFocused = state.index === index;
+        const iconName = getIconName(route.name, isFocused);
+
+        return (
+          <TouchableOpacity
+            key={route.key}
+            style={styles.tabButton}
+            onPress={() => {
+              setActiveTab(index);
+              navigation.navigate(route.name);
+            }}
+          >
+            <Ionicons
+              name={iconName as any}
+              size={24}
+              color={isFocused ? theme.colors.primary : theme.colors.secondary}
+            />
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+};
+
+// Main Stack Navigator
+const MainNavigator = () => {
+  const { theme } = useTheme();
+
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        gestureEnabled: true,
+        gestureDirection: "horizontal",
+        animation: "slide_from_right",
+      }}
+    >
+      <Stack.Screen name="Tournaments" component={TournamentsScreen} />
+      <Stack.Screen name="Picks" component={PicksScreen} />
+      <Stack.Screen name="Standings" component={StandingsScreen} />
+      <Stack.Screen name="Profile" component={ProfileNavigator} />
+    </Stack.Navigator>
   );
 };
 
@@ -57,42 +122,13 @@ const ProfileNavigator = () => {
   );
 };
 
-// Main Tab Navigator
-const MainNavigator = () => {
-  const { theme } = useTheme();
-
+// Auth Navigator
+const AuthNavigator = () => {
   return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName;
-
-          if (route.name === "Tournaments") {
-            iconName = focused ? "trophy" : "trophy-outline";
-          } else if (route.name === "Profile") {
-            iconName = focused ? "person" : "person-outline";
-          } else if (route.name === "Picks") {
-            iconName = focused ? "list" : "list-outline";
-          } else if (route.name === "Standings") {
-            iconName = focused ? "stats-chart" : "stats-chart-outline";
-          }
-
-          return <Ionicons name={iconName as any} size={size} color={color} />;
-        },
-        tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: theme.colors.secondary,
-        tabBarStyle: {
-          backgroundColor: theme.colors.background,
-          borderTopColor: theme.colors.border,
-        },
-        headerShown: false,
-      })}
-    >
-      <Tab.Screen name="Tournaments" component={TournamentsScreen} />
-      <Tab.Screen name="Picks" component={PicksScreen} />
-      <Tab.Screen name="Standings" component={StandingsScreen} />
-      <Tab.Screen name="Profile" component={ProfileNavigator} />
-    </Tab.Navigator>
+    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+      <AuthStack.Screen name="Login" component={LoginScreen} />
+      <AuthStack.Screen name="Signup" component={SignupScreen} />
+    </AuthStack.Navigator>
   );
 };
 
@@ -110,3 +146,20 @@ export const AppNavigator = () => {
     </Stack.Navigator>
   );
 };
+
+const styles = StyleSheet.create({
+  tabBar: {
+    flexDirection: "row",
+    height: 60,
+    borderTopWidth: 1,
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+  tabButton: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+});

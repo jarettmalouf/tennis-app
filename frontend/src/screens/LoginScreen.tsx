@@ -70,6 +70,7 @@ const LoginScreen = () => {
 
     setLoading(true);
     try {
+      console.log("Attempting login with username:", username);
       const response = await fetch(
         `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.LOGIN}`,
         {
@@ -84,24 +85,29 @@ const LoginScreen = () => {
         }
       );
 
+      console.log("Login response status:", response.status);
       const data = await response.json();
+      console.log("Login response data:", data);
 
       if (!response.ok) {
         throw new Error(data.error || "Login failed");
       }
 
       // Set user data with token
+      console.log("Setting user data:", data.user);
       setUser({
         ...data.user,
         token: data.token,
       });
 
       // Set authentication state
+      console.log("Setting authentication state to true");
       setIsAuthenticated(true);
 
       // No need to navigate manually, the AppNavigator will handle it
       // based on the isAuthenticated state
     } catch (error) {
+      console.error("Login error:", error);
       Alert.alert(
         "Error",
         (error as Error).message || "Invalid username or password"
