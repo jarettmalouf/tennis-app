@@ -59,27 +59,34 @@ export const signup = async (req: Request, res: Response) => {
 
 export const login = async (req: Request, res: Response) => {
   try {
+    console.log("Login request received:", req.body);
     const { username, password } = req.body;
 
     // Find user
+    console.log("Looking for user:", username);
     const user = (await User.findOne({ username })) as UserDocument | null;
     if (!user) {
+      console.log("User not found:", username);
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
     // Check password
+    console.log("Checking password for user:", username);
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
+      console.log("Password mismatch for user:", username);
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
     // Generate JWT token
+    console.log("Generating token for user:", username);
     const token = jwt.sign(
       { userId: user._id },
       process.env.JWT_SECRET || "your-secret-key",
       { expiresIn: "7d" }
     );
 
+    console.log("Login successful for user:", username);
     res.json({
       token,
       user: {
