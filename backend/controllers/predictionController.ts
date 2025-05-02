@@ -1,13 +1,7 @@
-import { NextFunction, Request, Response } from "express";
+import { NextFunction, Request, RequestHandler, Response } from "express";
 
+import { AuthRequest } from "../types/auth";
 import Prediction from "../models/Prediction";
-
-// Extend Express Request type to include user
-interface AuthRequest extends Request {
-  user?: {
-    userId: string;
-  };
-}
 
 export const createPrediction = async (req: Request, res: Response) => {
   try {
@@ -33,53 +27,69 @@ export const createPrediction = async (req: Request, res: Response) => {
   }
 };
 
-export const getPredictions = async (req: Request, res: Response) => {
+export const getPredictions: RequestHandler = async (req, res, next) => {
   try {
-    const { userId } = req.params;
-    const predictions = await Prediction.find({ user: userId });
-    res.json(predictions);
-  } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
-  }
-};
-
-export const savePrediction = async (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    console.log("Received prediction request:", {
-      body: req.body,
-      user: req.user,
-    });
-
-    const { tournamentId, picks } = req.body;
-
-    if (!req.user?.userId) {
-      console.log("No user ID found in request");
-      res.status(401).json({ error: "User ID not found in request" });
+    const { tournamentId } = req.query;
+    if (!tournamentId || typeof tournamentId !== "string") {
+      res.status(400).json({ error: "Tournament ID is required" });
       return;
     }
 
-    console.log("Creating prediction with data:", {
-      user: req.user.userId,
+    const authReq = req as AuthRequest;
+    if (!authReq.user?.userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const predictions = await Prediction.find({
+      user: authReq.user.userId,
       tournamentId,
-      picks,
     });
+
+    res.json(predictions);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const savePrediction: RequestHandler = async (req, res, next) => {
+  try {
+    const authReq = req as AuthRequest;
+    if (!authReq.user?.userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const { tournamentId, bracketData } = req.body;
+
+    if (!tournamentId || !bracketData) {
+      res
+        .status(400)
+        .json({ error: "Tournament ID and bracket data are required" });
+      return;
+    }
+
+    const existingPrediction = await Prediction.findOne({
+      user: authReq.user.userId,
+      tournamentId,
+    });
+
+    if (existingPrediction) {
+      existingPrediction.bracketData = bracketData;
+      await existingPrediction.save();
+      res.json(existingPrediction);
+      return;
+    }
 
     const prediction = new Prediction({
-      user: req.user.userId,
+      user: authReq.user.userId,
       tournamentId,
-      picks,
+      bracketData,
     });
 
-    const savedPrediction = await prediction.save();
-    console.log("Successfully saved prediction:", savedPrediction);
-
-    res.status(201).json({ message: "Prediction saved successfully" });
+    await prediction.save();
+    res.status(201).json(prediction);
   } catch (error) {
-    console.error("Error saving prediction:", error);
-    res.status(500).json({ error: "Failed to save prediction" });
+    next(error);
   }
 };
