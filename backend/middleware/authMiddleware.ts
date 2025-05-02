@@ -37,7 +37,7 @@ export const authMiddleware = (
     }
 
     // Set the user ID in the request object
-    (req as any).user = { id: decoded.userId };
+    (req as any).user = { userId: decoded.userId };
 
     next();
   } catch (err) {
