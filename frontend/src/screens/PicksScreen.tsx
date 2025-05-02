@@ -9,13 +9,13 @@ import {
   View,
 } from "react-native";
 import React, { useEffect, useState } from "react";
+import { User, UserContextType } from "../types/models";
 
 import { API_CONFIG } from "../config/api";
 import CountryFlag from "react-native-country-flag";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
-import { User } from "../types/models";
 import { useTheme } from "../context/ThemeContext";
 import { useUser } from "../context/UserContext";
 
@@ -51,6 +51,7 @@ type Match = {
   id: string;
   player1: Player;
   player2: Player;
+  selectedPlayer: Player | null;
 };
 
 type Round = {
@@ -79,161 +80,193 @@ const mockBracketData: BracketData = {
           id: "1",
           player1: { name: "N. Djokovic (1)", country: "RS", score: "" },
           player2: { name: "R. Safiullin", country: "RU", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "2",
           player1: { name: "A. Popyrin", country: "AU", score: "" },
           player2: { name: "R. Gasquet (WC)", country: "FR", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "3",
           player1: { name: "L. Musetti (13)", country: "IT", score: "" },
           player2: { name: "F. Fognini (WC)", country: "IT", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "4",
           player1: { name: "A. Muller", country: "FR", score: "" },
           player2: { name: "C. Alcaraz (2)", country: "ES", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "5",
           player1: { name: "D. Medvedev (3)", country: "RU", score: "" },
           player2: { name: "G. Monfils (WC)", country: "FR", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "6",
           player1: { name: "G. Dimitrov (15)", country: "BG", score: "" },
           player2: { name: "M. Kecmanovic", country: "RS", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "7",
           player1: { name: "A. de Minaur (8)", country: "AU", score: "" },
           player2: { name: "S. Wawrinka (WC)", country: "CH", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "8",
           player1: { name: "J. Sinner (4)", country: "IT", score: "" },
           player2: { name: "S. Korda", country: "US", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "9",
           player1: { name: "A. Rublev (5)", country: "RU", score: "" },
           player2: { name: "T. Etcheverry", country: "AR", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "10",
           player1: { name: "U. Humbert (14)", country: "FR", score: "" },
           player2: { name: "B. Shelton", country: "US", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "11",
           player1: { name: "C. Ruud (7)", country: "NO", score: "" },
           player2: { name: "N. Jarry", country: "CL", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "12",
           player1: { name: "H. Hurkacz (6)", country: "PL", score: "" },
           player2: { name: "J. Lehecka", country: "CZ", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "13",
           player1: { name: "S. Tsitsipas (9)", country: "GR", score: "" },
           player2: { name: "L. Sonego", country: "IT", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "14",
           player1: { name: "F. Tiafoe (12)", country: "US", score: "" },
           player2: { name: "M. Berrettini", country: "IT", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "15",
           player1: { name: "A. Zverev (10)", country: "DE", score: "" },
           player2: { name: "S. Baez", country: "AR", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "16",
           player1: { name: "J. Draper (11)", country: "GB", score: "" },
           player2: { name: "D. Shapovalov", country: "CA", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "17",
           player1: { name: "K. Khachanov (16)", country: "RU", score: "" },
           player2: { name: "C. Norrie", country: "GB", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "18",
           player1: { name: "B. Coric", country: "HR", score: "" },
           player2: { name: "A. Davidovich Fokina", country: "ES", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "19",
           player1: { name: "T. Fritz", country: "US", score: "" },
           player2: { name: "D. Lajovic", country: "RS", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "20",
           player1: { name: "A. Bublik", country: "KZ", score: "" },
           player2: { name: "J. Struff", country: "DE", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "21",
           player1: { name: "F. Cerundolo", country: "AR", score: "" },
           player2: { name: "M. Fucsovics", country: "HU", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "22",
           player1: { name: "R. Bautista Agut", country: "ES", score: "" },
           player2: { name: "A. Mannarino", country: "FR", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "23",
           player1: { name: "M. Arnaldi", country: "IT", score: "" },
           player2: { name: "Y. Hanfmann", country: "DE", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "24",
           player1: { name: "J. Thompson", country: "AU", score: "" },
           player2: { name: "N. Borges", country: "PT", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "25",
           player1: { name: "P. Martinez", country: "ES", score: "" },
           player2: { name: "M. Giron", country: "US", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "26",
           player1: { name: "T. Machac", country: "CZ", score: "" },
           player2: { name: "C. Moutet", country: "FR", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "27",
           player1: { name: "V. Pospisil", country: "CA", score: "" },
           player2: { name: "R. Carballes Baena", country: "ES", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "28",
           player1: { name: "D. Altmaier", country: "DE", score: "" },
           player2: { name: "M. Cressy", country: "US", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "29",
           player1: { name: "F. Cobolli", country: "IT", score: "" },
           player2: { name: "B. Nakashima", country: "US", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "30",
           player1: { name: "A. Fils", country: "FR", score: "" },
           player2: { name: "D. Koepfer", country: "DE", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "31",
           player1: { name: "F. Auger-Aliassime", country: "CA", score: "" },
           player2: { name: "L. Van Assche", country: "FR", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "32",
           player1: { name: "J. Munar", country: "ES", score: "" },
           player2: { name: "R. Berankis", country: "LT", score: "" },
+          selectedPlayer: null,
         },
       ],
     },
@@ -244,81 +277,97 @@ const mockBracketData: BracketData = {
           id: "33",
           player1: { name: "TBD", country: "", score: "" },
           player2: { name: "TBD", country: "", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "34",
           player1: { name: "TBD", country: "", score: "" },
           player2: { name: "TBD", country: "", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "35",
           player1: { name: "TBD", country: "", score: "" },
           player2: { name: "TBD", country: "", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "36",
           player1: { name: "TBD", country: "", score: "" },
           player2: { name: "TBD", country: "", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "37",
           player1: { name: "TBD", country: "", score: "" },
           player2: { name: "TBD", country: "", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "38",
           player1: { name: "TBD", country: "", score: "" },
           player2: { name: "TBD", country: "", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "39",
           player1: { name: "TBD", country: "", score: "" },
           player2: { name: "TBD", country: "", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "40",
           player1: { name: "TBD", country: "", score: "" },
           player2: { name: "TBD", country: "", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "41",
           player1: { name: "TBD", country: "", score: "" },
           player2: { name: "TBD", country: "", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "42",
           player1: { name: "TBD", country: "", score: "" },
           player2: { name: "TBD", country: "", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "43",
           player1: { name: "TBD", country: "", score: "" },
           player2: { name: "TBD", country: "", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "44",
           player1: { name: "TBD", country: "", score: "" },
           player2: { name: "TBD", country: "", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "45",
           player1: { name: "TBD", country: "", score: "" },
           player2: { name: "TBD", country: "", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "46",
           player1: { name: "TBD", country: "", score: "" },
           player2: { name: "TBD", country: "", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "47",
           player1: { name: "TBD", country: "", score: "" },
           player2: { name: "TBD", country: "", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "48",
           player1: { name: "TBD", country: "", score: "" },
           player2: { name: "TBD", country: "", score: "" },
+          selectedPlayer: null,
         },
       ],
     },
@@ -329,41 +378,49 @@ const mockBracketData: BracketData = {
           id: "49",
           player1: { name: "TBD", country: "", score: "" },
           player2: { name: "TBD", country: "", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "50",
           player1: { name: "TBD", country: "", score: "" },
           player2: { name: "TBD", country: "", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "51",
           player1: { name: "TBD", country: "", score: "" },
           player2: { name: "TBD", country: "", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "52",
           player1: { name: "TBD", country: "", score: "" },
           player2: { name: "TBD", country: "", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "53",
           player1: { name: "TBD", country: "", score: "" },
           player2: { name: "TBD", country: "", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "54",
           player1: { name: "TBD", country: "", score: "" },
           player2: { name: "TBD", country: "", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "55",
           player1: { name: "TBD", country: "", score: "" },
           player2: { name: "TBD", country: "", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "56",
           player1: { name: "TBD", country: "", score: "" },
           player2: { name: "TBD", country: "", score: "" },
+          selectedPlayer: null,
         },
       ],
     },
@@ -374,21 +431,25 @@ const mockBracketData: BracketData = {
           id: "57",
           player1: { name: "TBD", country: "", score: "" },
           player2: { name: "TBD", country: "", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "58",
           player1: { name: "TBD", country: "", score: "" },
           player2: { name: "TBD", country: "", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "59",
           player1: { name: "TBD", country: "", score: "" },
           player2: { name: "TBD", country: "", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "60",
           player1: { name: "TBD", country: "", score: "" },
           player2: { name: "TBD", country: "", score: "" },
+          selectedPlayer: null,
         },
       ],
     },
@@ -399,11 +460,13 @@ const mockBracketData: BracketData = {
           id: "61",
           player1: { name: "TBD", country: "", score: "" },
           player2: { name: "TBD", country: "", score: "" },
+          selectedPlayer: null,
         },
         {
           id: "62",
           player1: { name: "TBD", country: "", score: "" },
           player2: { name: "TBD", country: "", score: "" },
+          selectedPlayer: null,
         },
       ],
     },
@@ -414,6 +477,7 @@ const mockBracketData: BracketData = {
           id: "63",
           player1: { name: "TBD", country: "", score: "" },
           player2: { name: "TBD", country: "", score: "" },
+          selectedPlayer: null,
         },
       ],
     },
@@ -421,15 +485,11 @@ const mockBracketData: BracketData = {
 };
 
 type MatchProps = {
-  match: {
-    id: string;
-    player1: { name: string; country: string; score: string };
-    player2: { name: string; country: string; score: string };
-  };
+  match: Match;
   isComplete?: boolean;
   isFinal?: boolean;
-  onPlayerSelect?: (playerId: string) => void;
-  selectedPlayerId?: string;
+  onPlayerSelect?: (player: Player) => void;
+  isLocked?: boolean;
 };
 
 const Match = ({
@@ -437,13 +497,13 @@ const Match = ({
   isComplete,
   isFinal,
   onPlayerSelect,
-  selectedPlayerId,
+  isLocked,
 }: MatchProps) => {
   const { theme } = useTheme();
 
-  const handlePlayerPress = (playerId: string) => {
-    if (onPlayerSelect) {
-      onPlayerSelect(playerId);
+  const handlePlayerPress = (player: Player) => {
+    if (onPlayerSelect && !isLocked) {
+      onPlayerSelect(player);
     }
   };
 
@@ -473,10 +533,8 @@ const Match = ({
       <View style={styles.matchDetails}>
         <TouchableOpacity
           style={[styles.playerRow, isPlayer1TBD && styles.playerRowDisabled]}
-          onPress={() =>
-            !isPlayer1TBD && handlePlayerPress(`player1-${match.id}`)
-          }
-          disabled={isPlayer1TBD}
+          onPress={() => !isPlayer1TBD && handlePlayerPress(match.player1)}
+          disabled={isPlayer1TBD || isLocked}
         >
           <View style={styles.playerInfo}>
             <View
@@ -485,7 +543,7 @@ const Match = ({
                 {
                   borderColor: theme.colors.primary,
                   backgroundColor:
-                    selectedPlayerId === `player1-${match.id}`
+                    match.selectedPlayer?.name === match.player1.name
                       ? theme.colors.primary
                       : "transparent",
                 },
@@ -506,7 +564,7 @@ const Match = ({
                     ? theme.colors.secondary
                     : theme.colors.text,
                   fontWeight:
-                    selectedPlayerId === `player1-${match.id}`
+                    match.selectedPlayer?.name === match.player1.name
                       ? "bold"
                       : "normal",
                 },
@@ -529,10 +587,8 @@ const Match = ({
 
         <TouchableOpacity
           style={[styles.playerRow, isPlayer2TBD && styles.playerRowDisabled]}
-          onPress={() =>
-            !isPlayer2TBD && handlePlayerPress(`player2-${match.id}`)
-          }
-          disabled={isPlayer2TBD}
+          onPress={() => !isPlayer2TBD && handlePlayerPress(match.player2)}
+          disabled={isPlayer2TBD || isLocked}
         >
           <View style={styles.playerInfo}>
             <View
@@ -541,7 +597,7 @@ const Match = ({
                 {
                   borderColor: theme.colors.primary,
                   backgroundColor:
-                    selectedPlayerId === `player2-${match.id}`
+                    match.selectedPlayer?.name === match.player2.name
                       ? theme.colors.primary
                       : "transparent",
                 },
@@ -562,7 +618,7 @@ const Match = ({
                     ? theme.colors.secondary
                     : theme.colors.text,
                   fontWeight:
-                    selectedPlayerId === `player2-${match.id}`
+                    match.selectedPlayer?.name === match.player2.name
                       ? "bold"
                       : "normal",
                 },
@@ -648,61 +704,65 @@ const RoundSelector = ({
 // Add savePredictions function
 const savePredictions = async (
   tournamentId: string,
-  picks: Record<string, string>,
-  user: User | null,
-  bracketData: BracketData
+  bracketData: BracketData,
+  userContext: UserContextType
 ) => {
-  console.log("step 0");
-  console.log("step 1");
-  console.log(user);
+  if (!userContext.user?.token) {
+    throw new Error("User not authenticated");
+  }
+
   try {
-    // Convert picks to array format
-    const picksArray = bracketData.rounds.flatMap(
-      (round: Round, roundIndex: number) => {
-        return round.matches.map((match: Match) => {
-          const selectedPlayerId =
-            picks[`player1-${match.id}`] || picks[`player2-${match.id}`];
-          const isPlayer1 = selectedPlayerId?.startsWith("player1");
-          const selectedPlayer = isPlayer1 ? match.player1 : match.player2;
-
-          return {
-            name: selectedPlayer.name,
-            country: selectedPlayer.country,
-          };
-        });
-      }
-    );
-
-    console.log("Saving predictions:", {
-      tournamentId,
-      picks: picksArray,
-      token: user?.token,
-    });
-
     const response = await fetch(
       `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PREDICTIONS}`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${user?.token}`,
+          Authorization: `Bearer ${userContext.user.token}`,
         },
         body: JSON.stringify({
           tournamentId,
-          picks: picksArray,
+          bracketData,
         }),
       }
     );
 
-    console.log("Response status:", response.status);
-    const responseData = await response.json();
-    console.log("Response data:", responseData);
-
     if (!response.ok) {
       throw new Error("Failed to save predictions");
     }
+
+    const data = await response.json();
+    console.log("Predictions saved successfully:", data);
+    return data;
   } catch (error) {
     console.error("Error saving predictions:", error);
+    throw error;
+  }
+};
+
+// Add fetchPredictions function
+const fetchPredictions = async (tournamentId: string, user: User | null) => {
+  if (!user?.token) return null;
+
+  try {
+    const response = await fetch(
+      `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PREDICTIONS}?tournamentId=${tournamentId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch predictions");
+    }
+
+    const predictions = await response.json();
+    return predictions[0]; // Return the first prediction if it exists
+  } catch (error) {
+    console.error("Error fetching predictions:", error);
+    return null;
   }
 };
 
@@ -714,16 +774,16 @@ export const PicksScreen = ({
   navigation?: PicksScreenNavigationProp;
 }) => {
   const { theme } = useTheme();
-  const { user } = useUser();
+  const { user, setUser } = useUser();
   const { tournament } = route?.params || { tournament: null };
   const [selectedRound, setSelectedRound] = useState(0);
+  const [selectedPlayers, setSelectedPlayers] = useState<Player[]>([]);
 
   // Store picks data per tournament using tournament ID as key
   const [tournamentPicks, setTournamentPicks] = useState<
     Record<
       string,
       {
-        selectedPlayers: Record<string, string>;
         bracketData: BracketData;
         isLocked: boolean;
       }
@@ -733,30 +793,76 @@ export const PicksScreen = ({
   // Get current tournament's data or initialize with default values
   const currentTournamentId = tournament?.id || "default";
   const currentTournamentData = tournamentPicks[currentTournamentId] || {
-    selectedPlayers: {},
     bracketData: mockBracketData,
     isLocked: false,
   };
 
   // Destructure for easier access
-  const { selectedPlayers, bracketData, isLocked } = currentTournamentData;
+  const { bracketData, isLocked } = currentTournamentData;
 
   // Update tournament data when tournament changes
   useEffect(() => {
-    if (tournament?.id && !tournamentPicks[tournament.id]) {
-      // Initialize new tournament with default data
-      setTournamentPicks((prev) => ({
-        ...prev,
-        [tournament.id]: {
-          selectedPlayers: {},
-          bracketData: mockBracketData,
-          isLocked: false,
-        },
-      }));
-    }
-    // Reset selected round to 0 when tournament changes
-    setSelectedRound(0);
-  }, [tournament]);
+    const loadTournamentData = async () => {
+      if (tournament?.id) {
+        // Initialize new tournament with default data
+        const defaultBracketData = JSON.parse(JSON.stringify(mockBracketData));
+        // Initialize selectedPlayer as null for all matches
+        defaultBracketData.rounds.forEach((round: Round) => {
+          round.matches.forEach((match: Match) => {
+            match.selectedPlayer = null;
+          });
+        });
+
+        setTournamentPicks((prev) => ({
+          ...prev,
+          [tournament.id]: {
+            bracketData: defaultBracketData,
+            isLocked: false,
+          },
+        }));
+
+        // Initialize selectedPlayers array with null values
+        const totalMatches = defaultBracketData.rounds.reduce(
+          (acc: number, round: Round) => acc + round.matches.length,
+          0
+        );
+        setSelectedPlayers(new Array(totalMatches).fill(null));
+
+        // Try to fetch existing prediction
+        const existingPrediction = await fetchPredictions(tournament.id, user);
+        if (existingPrediction) {
+          // Update selectedPlayers with existing picks
+          const updatedSelectedPlayers = [...selectedPlayers];
+          let currentMatchIndex = 0;
+
+          existingPrediction.bracketData.rounds.forEach((round: Round) => {
+            round.matches.forEach((match: Match) => {
+              if (match.selectedPlayer) {
+                updatedSelectedPlayers[currentMatchIndex] =
+                  match.selectedPlayer;
+              }
+              currentMatchIndex++;
+            });
+          });
+
+          setSelectedPlayers(updatedSelectedPlayers);
+
+          // Update tournament data with existing prediction
+          setTournamentPicks((prev) => ({
+            ...prev,
+            [tournament.id]: {
+              bracketData: existingPrediction.bracketData,
+              isLocked: true,
+            },
+          }));
+        }
+      }
+      // Reset selected round to 0 when tournament changes
+      setSelectedRound(0);
+    };
+
+    loadTournamentData();
+  }, [tournament, user]);
 
   const handleRoundSelect = (index: number) => {
     setSelectedRound(index);
@@ -779,7 +885,7 @@ export const PicksScreen = ({
 
     // Reset the bracket data to initial state
     const newBracketData = JSON.parse(JSON.stringify(mockBracketData));
-    const newSelectedPlayers: Record<string, string> = {};
+    const newSelectedPlayers: Player[] = [];
 
     // Start with Round of 64
     let currentRoundIndex = 0;
@@ -797,10 +903,13 @@ export const PicksScreen = ({
         }
 
         // Pick a random winner
-        const { player, playerId } = getRandomPlayerFromMatch(match);
+        const { player } = getRandomPlayerFromMatch(match);
 
-        // Add to selections
-        newSelectedPlayers[playerId] = playerId;
+        // Add to selectedPlayers array
+        newSelectedPlayers.push(player);
+
+        // Set the selectedPlayer in the match
+        match.selectedPlayer = player;
 
         // If not the final round, advance to next round
         if (currentRoundIndex < currentBracketData.rounds.length - 1) {
@@ -831,12 +940,14 @@ export const PicksScreen = ({
       currentRoundIndex++;
     }
 
+    // Update selectedPlayers state
+    setSelectedPlayers(newSelectedPlayers);
+
     // Update tournament data with the auto-picked results
     setTournamentPicks((prev) => ({
       ...prev,
       [tournament.id]: {
         ...prev[tournament.id],
-        selectedPlayers: newSelectedPlayers,
         bracketData: currentBracketData,
       },
     }));
@@ -845,157 +956,42 @@ export const PicksScreen = ({
     setSelectedRound(bracketData.rounds.length - 1);
   };
 
-  const handlePlayerSelect = (playerId: string) => {
-    if (!tournament?.id) return;
+  const handlePlayerSelect = (player: Player, matchIndex: number) => {
+    if (!tournament?.id || isLocked) return;
 
-    // Extract the match ID and player number from the player ID
-    const [playerNum, matchId] = playerId.split("-");
-    const isPlayer1 = playerNum === "player1";
+    setSelectedPlayers((prev) => {
+      const newSelectedPlayers = [...prev];
+      newSelectedPlayers[matchIndex] = player;
+      return newSelectedPlayers;
+    });
 
-    // Find the current match and round
-    const currentRound = bracketData.rounds[selectedRound];
-    const currentMatch = currentRound.matches.find(
-      (match) => match.id === matchId
-    );
+    setTournamentPicks((prev) => {
+      const currentTournament = prev[tournament.id];
+      if (!currentTournament) return prev;
 
-    if (!currentMatch) return;
-
-    // Get the selected player's data
-    const selectedPlayer = isPlayer1
-      ? currentMatch.player1
-      : currentMatch.player2;
-    const otherPlayer = isPlayer1 ? currentMatch.player2 : currentMatch.player1;
-
-    // Find the previously selected player in this match (if any)
-    const previouslySelectedPlayerId = Object.keys(selectedPlayers).find((id) =>
-      id.includes(`-${matchId}`)
-    );
-
-    let previouslySelectedPlayer = null;
-    if (previouslySelectedPlayerId) {
-      const [prevPlayerNum] = previouslySelectedPlayerId.split("-");
-      const wasPlayer1 = prevPlayerNum === "player1";
-      previouslySelectedPlayer = wasPlayer1
-        ? currentMatch.player1
-        : currentMatch.player2;
-    }
-
-    // Create new selections object
-    const newSelections = { ...selectedPlayers };
-
-    // Remove selection for current match
-    delete newSelections[`player1-${matchId}`];
-    delete newSelections[`player2-${matchId}`];
-
-    // Add new selection
-    newSelections[playerId] = playerId;
-
-    // Only remove selections for matches that contain the previously selected player
-    if (previouslySelectedPlayer) {
-      // Find all matches in subsequent rounds that contain the previously selected player
-      for (
-        let roundIndex = selectedRound + 1;
-        roundIndex < bracketData.rounds.length;
-        roundIndex++
-      ) {
-        const round = bracketData.rounds[roundIndex];
-        round.matches.forEach((match) => {
-          if (
-            match.player1.name === previouslySelectedPlayer.name ||
-            match.player2.name === previouslySelectedPlayer.name
-          ) {
-            // Remove selections for this match
-            delete newSelections[`player1-${match.id}`];
-            delete newSelections[`player2-${match.id}`];
-          }
-        });
-      }
-    }
-
-    // Create new bracket data
-    const newBracketData = JSON.parse(JSON.stringify(bracketData));
-
-    // Find the next round
-    const nextRoundIndex = selectedRound + 1;
-    if (nextRoundIndex < newBracketData.rounds.length) {
-      // Calculate next match position
-      const currentMatchIndex = currentRound.matches.findIndex(
-        (m) => m.id === matchId
+      const newBracketData = JSON.parse(
+        JSON.stringify(currentTournament.bracketData)
       );
-      const nextMatchIndex = Math.floor(currentMatchIndex / 2);
-      const isEvenMatch = currentMatchIndex % 2 === 0;
 
-      // Update next round match
-      if (
-        nextMatchIndex < newBracketData.rounds[nextRoundIndex].matches.length
-      ) {
-        const nextMatch =
-          newBracketData.rounds[nextRoundIndex].matches[nextMatchIndex];
-
-        // Check if the previously selected player is in the next match
-        if (previouslySelectedPlayer) {
-          if (nextMatch.player1.name === previouslySelectedPlayer.name) {
-            nextMatch.player1 = { name: "TBD", country: "", score: "" };
-          }
-          if (nextMatch.player2.name === previouslySelectedPlayer.name) {
-            nextMatch.player2 = { name: "TBD", country: "", score: "" };
-          }
-        }
-
-        // Place the newly selected player in the appropriate slot
-        if (isEvenMatch) {
-          nextMatch.player1 = { ...selectedPlayer };
-        } else {
-          nextMatch.player2 = { ...selectedPlayer };
-        }
-      }
-
-      // Clear affected downstream matches
-      for (
-        let roundIndex = nextRoundIndex + 1;
-        roundIndex < newBracketData.rounds.length;
-        roundIndex++
-      ) {
-        const round = newBracketData.rounds[roundIndex];
+      // Find the match and update its selectedPlayer
+      let currentMatchIndex = 0;
+      newBracketData.rounds.forEach((round: Round) => {
         round.matches.forEach((match: Match) => {
-          // Clear matches that contain the previously selected player
-          if (previouslySelectedPlayer) {
-            if (match.player1.name === previouslySelectedPlayer.name) {
-              match.player1 = { name: "TBD", country: "", score: "" };
-            }
-            if (match.player2.name === previouslySelectedPlayer.name) {
-              match.player2 = { name: "TBD", country: "", score: "" };
-            }
+          if (currentMatchIndex === matchIndex) {
+            match.selectedPlayer = player;
           }
-
-          // Clear matches that contain the other player from the current match
-          if (match.player1.name === otherPlayer.name) {
-            match.player1 = { name: "TBD", country: "", score: "" };
-          }
-          if (match.player2.name === otherPlayer.name) {
-            match.player2 = { name: "TBD", country: "", score: "" };
-          }
-
-          // Clear matches that contain the newly selected player
-          if (match.player1.name === selectedPlayer.name) {
-            match.player1 = { name: "TBD", country: "", score: "" };
-          }
-          if (match.player2.name === selectedPlayer.name) {
-            match.player2 = { name: "TBD", country: "", score: "" };
-          }
+          currentMatchIndex++;
         });
-      }
-    }
+      });
 
-    // Update tournament data with new selections and bracket data
-    setTournamentPicks((prev) => ({
-      ...prev,
-      [tournament.id]: {
-        ...prev[tournament.id],
-        selectedPlayers: newSelections,
-        bracketData: newBracketData,
-      },
-    }));
+      return {
+        ...prev,
+        [tournament.id]: {
+          ...currentTournament,
+          bracketData: newBracketData,
+        },
+      };
+    });
   };
 
   // Check if the bracket is fully filled out
@@ -1017,9 +1013,7 @@ export const PicksScreen = ({
 
         // Check if a winner has been selected for this match
         const matchId = match.id;
-        const hasSelection =
-          selectedPlayers[`player1-${matchId}`] ||
-          selectedPlayers[`player2-${matchId}`];
+        const hasSelection = match.selectedPlayer !== null;
 
         // If no selection has been made for this match, the bracket is not complete
         if (!hasSelection) {
@@ -1033,42 +1027,38 @@ export const PicksScreen = ({
     return true;
   };
 
-  const handleSavePicks = () => {
-    if (!tournament?.id) return;
+  const lockPicks = (tournamentId: string) => {
+    setTournamentPicks((prev) => ({
+      ...prev,
+      [tournamentId]: {
+        ...prev[tournamentId],
+        isLocked: true,
+      },
+    }));
+  };
 
-    // Check if the bracket is complete before allowing save
-    if (!isBracketComplete()) {
-      alert("You must fill out the entire bracket before saving your picks.");
+  const handleSavePicks = async () => {
+    if (!tournament?.id) {
+      Alert.alert("Error", "No tournament selected");
       return;
     }
 
-    // Show a confirmation message
-    Alert.alert(
-      "🔒",
-      "Are you sure you want to lock your picks? This action cannot be undone.",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Save",
-          onPress: () => {
-            // Update tournament data to mark it as locked
-            setTournamentPicks((prev) => ({
-              ...prev,
-              [tournament.id]: {
-                ...prev[tournament.id],
-                isLocked: true,
-              },
-            }));
+    if (!isBracketComplete()) {
+      Alert.alert(
+        "Error",
+        "You must fill out the entire bracket before saving your picks."
+      );
+      return;
+    }
 
-            // Save picks to database
-            savePredictions(tournament.id, selectedPlayers, user, bracketData);
-          },
-        },
-      ]
-    );
+    try {
+      console.log("bracketData", bracketData);
+      await savePredictions(tournament.id, bracketData, { user, setUser });
+      lockPicks(tournament.id);
+      Alert.alert("Success", "Your picks have been saved!");
+    } catch (error) {
+      Alert.alert("Error", "Failed to save your picks. Please try again.");
+    }
   };
 
   return (
@@ -1195,22 +1185,28 @@ export const PicksScreen = ({
             )}
           </View>
           <View style={styles.matchesList}>
-            {bracketData.rounds[selectedRound].matches.map((match) => (
-              <Match
-                key={match.id}
-                match={match}
-                isComplete={
-                  match.player1.score.includes("6-") ||
-                  match.player2.score.includes("6-")
-                }
-                isFinal={selectedRound === bracketData.rounds.length - 1}
-                onPlayerSelect={isLocked ? undefined : handlePlayerSelect}
-                selectedPlayerId={
-                  selectedPlayers[`player1-${match.id}`] ||
-                  selectedPlayers[`player2-${match.id}`]
-                }
-              />
-            ))}
+            {bracketData.rounds[selectedRound].matches.map((match, index) => {
+              const matchIndex =
+                bracketData.rounds
+                  .slice(0, selectedRound)
+                  .reduce((acc, round) => acc + round.matches.length, 0) +
+                index;
+              return (
+                <Match
+                  key={match.id}
+                  match={match}
+                  isComplete={
+                    match.player1.score.includes("6-") ||
+                    match.player2.score.includes("6-")
+                  }
+                  isFinal={selectedRound === bracketData.rounds.length - 1}
+                  onPlayerSelect={(player) =>
+                    handlePlayerSelect(player, matchIndex)
+                  }
+                  isLocked={isLocked}
+                />
+              );
+            })}
           </View>
         </View>
       </ScrollView>
