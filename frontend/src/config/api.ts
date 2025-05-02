@@ -6,5 +6,6 @@ export const API_CONFIG = {
     PROFILE: "/api/profile",
     DELETE_PROFILE: "/api/profile",
     CHANGE_PASSWORD: "/api/profile/password",
+    PREDICTIONS: "/api/predictions",
   },
 } as const;

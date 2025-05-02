@@ -1,10 +1,10 @@
 // User Types
 export interface User {
-  _id: string;
+  id: string;
   username: string;
   name?: string;
   friends: string[];
-  token?: string;
+  token: string;
   bio?: string;
   profileImage?: string;
   language?: string;
@@ -49,4 +49,9 @@ export interface ThemeColors {
 export interface Theme {
   dark: boolean;
   colors: ThemeColors;
+}
+
+export interface UserContextType {
+  user: User | null;
+  setUser: (user: User | null) => void;
 }

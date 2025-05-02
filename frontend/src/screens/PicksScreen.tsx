@@ -10,11 +10,14 @@ import {
 } from "react-native";
 import React, { useEffect, useState } from "react";
 
+import { API_CONFIG } from "../config/api";
 import CountryFlag from "react-native-country-flag";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
+import { User } from "../types/models";
 import { useTheme } from "../context/ThemeContext";
+import { useUser } from "../context/UserContext";
 
 // Define types for the navigation and route
 type RootStackParamList = {
@@ -423,7 +426,7 @@ type MatchProps = {
     player1: { name: string; country: string; score: string };
     player2: { name: string; country: string; score: string };
   };
-  isWinner?: boolean;
+  isComplete?: boolean;
   isFinal?: boolean;
   onPlayerSelect?: (playerId: string) => void;
   selectedPlayerId?: string;
@@ -431,7 +434,7 @@ type MatchProps = {
 
 const Match = ({
   match,
-  isWinner,
+  isComplete,
   isFinal,
   onPlayerSelect,
   selectedPlayerId,
@@ -463,7 +466,7 @@ const Match = ({
         {
           backgroundColor: theme.colors.card,
           borderColor: theme.colors.border,
-          borderWidth: isWinner ? 2 : 1,
+          borderWidth: isComplete ? 2 : 1,
         },
       ]}
     >
@@ -642,6 +645,67 @@ const RoundSelector = ({
   );
 };
 
+// Add savePredictions function
+const savePredictions = async (
+  tournamentId: string,
+  picks: Record<string, string>,
+  user: User | null,
+  bracketData: BracketData
+) => {
+  console.log("step 0");
+  console.log("step 1");
+  console.log(user);
+  try {
+    // Convert picks to array format
+    const picksArray = bracketData.rounds.flatMap(
+      (round: Round, roundIndex: number) => {
+        return round.matches.map((match: Match) => {
+          const selectedPlayerId =
+            picks[`player1-${match.id}`] || picks[`player2-${match.id}`];
+          const isPlayer1 = selectedPlayerId?.startsWith("player1");
+          const selectedPlayer = isPlayer1 ? match.player1 : match.player2;
+
+          return {
+            name: selectedPlayer.name,
+            country: selectedPlayer.country,
+          };
+        });
+      }
+    );
+
+    console.log("Saving predictions:", {
+      tournamentId,
+      picks: picksArray,
+      token: user?.token,
+    });
+
+    const response = await fetch(
+      `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PREDICTIONS}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user?.token}`,
+        },
+        body: JSON.stringify({
+          tournamentId,
+          picks: picksArray,
+        }),
+      }
+    );
+
+    console.log("Response status:", response.status);
+    const responseData = await response.json();
+    console.log("Response data:", responseData);
+
+    if (!response.ok) {
+      throw new Error("Failed to save predictions");
+    }
+  } catch (error) {
+    console.error("Error saving predictions:", error);
+  }
+};
+
 export const PicksScreen = ({
   route,
   navigation,
@@ -650,6 +714,7 @@ export const PicksScreen = ({
   navigation?: PicksScreenNavigationProp;
 }) => {
   const { theme } = useTheme();
+  const { user } = useUser();
   const { tournament } = route?.params || { tournament: null };
   const [selectedRound, setSelectedRound] = useState(0);
 
@@ -775,6 +840,9 @@ export const PicksScreen = ({
         bracketData: currentBracketData,
       },
     }));
+
+    // Navigate to the final round
+    setSelectedRound(bracketData.rounds.length - 1);
   };
 
   const handlePlayerSelect = (playerId: string) => {
@@ -994,6 +1062,9 @@ export const PicksScreen = ({
                 isLocked: true,
               },
             }));
+
+            // Save picks to database
+            savePredictions(tournament.id, selectedPlayers, user, bracketData);
           },
         },
       ]
@@ -1128,7 +1199,7 @@ export const PicksScreen = ({
               <Match
                 key={match.id}
                 match={match}
-                isWinner={
+                isComplete={
                   match.player1.score.includes("6-") ||
                   match.player2.score.includes("6-")
                 }
