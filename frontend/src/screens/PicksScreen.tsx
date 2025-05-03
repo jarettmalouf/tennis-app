@@ -8,6 +8,13 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import {
+  BracketData,
+  Match as MatchType,
+  Player,
+  Round,
+  SetScore,
+} from "../types/bracket";
 import React, { useEffect, useState } from "react";
 import { User, UserContextType } from "../types/models";
 
@@ -16,6 +23,7 @@ import CountryFlag from "react-native-country-flag";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
+import { mockBracketData } from "../data/mockBracketData";
 import { useTheme } from "../context/ThemeContext";
 import { useUser } from "../context/UserContext";
 
@@ -40,452 +48,62 @@ type PicksScreenNavigationProp = NativeStackNavigationProp<
 >;
 type PicksScreenRouteProp = RouteProp<RootStackParamList, "Picks">;
 
-// Define types for the bracket data
-type Player = {
-  name: string;
-  country: string;
-  score: string;
+const setWon = (
+  score: SetScore,
+  opponentScore: SetScore | undefined
+): boolean => {
+  if (!score || !opponentScore) return false;
+
+  const p1Games = score.gamesWon;
+  const p2Games = opponentScore.gamesWon;
+
+  return (
+    (p1Games >= 6 && p1Games - p2Games >= 2) || (p1Games === 7 && p2Games === 6)
+  );
 };
 
-type Match = {
-  id: string;
-  player1: Player;
-  player2: Player;
-  selectedPlayer: Player | null;
+const isComplete = (
+  player1: Player,
+  player2: Player,
+  bestOf: number = 3
+): boolean => {
+  return winner(player1, player2, bestOf) !== null;
 };
 
-type Round = {
-  name: string;
-  matches: Match[];
-};
+const winner = (
+  player1: Player,
+  player2: Player,
+  bestOf: number = 3
+): Player | null => {
+  if (!player1.score || !player2.score) return null;
+  const setsToWin = Math.ceil(bestOf / 2);
+  const sets = Math.max(player1.score.length, player2.score.length);
+  let player1SetsWon = 0;
+  let player2SetsWon = 0;
 
-type BracketData = {
-  tournamentName: string;
-  tournamentLocation: string;
-  tournamentDate: string;
-  rounds: Round[];
-  isLocked?: boolean;
-};
+  for (let i = 0; i < sets; i++) {
+    const p1Score = player1.score[i] ?? { gamesWon: 0 };
+    const p2Score = player2.score[i] ?? { gamesWon: 0 };
 
-// Mock data for tournament bracket
-const mockBracketData: BracketData = {
-  tournamentName: "Monte-Carlo Masters",
-  tournamentLocation: "Monte Carlo, Monaco",
-  tournamentDate: "April 7-14, 2025",
-  rounds: [
-    {
-      name: "Round of 64",
-      matches: [
-        {
-          id: "1",
-          player1: { name: "N. Djokovic (1)", country: "RS", score: "" },
-          player2: { name: "R. Safiullin", country: "RU", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "2",
-          player1: { name: "A. Popyrin", country: "AU", score: "" },
-          player2: { name: "R. Gasquet (WC)", country: "FR", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "3",
-          player1: { name: "L. Musetti (13)", country: "IT", score: "" },
-          player2: { name: "F. Fognini (WC)", country: "IT", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "4",
-          player1: { name: "A. Muller", country: "FR", score: "" },
-          player2: { name: "C. Alcaraz (2)", country: "ES", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "5",
-          player1: { name: "D. Medvedev (3)", country: "RU", score: "" },
-          player2: { name: "G. Monfils (WC)", country: "FR", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "6",
-          player1: { name: "G. Dimitrov (15)", country: "BG", score: "" },
-          player2: { name: "M. Kecmanovic", country: "RS", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "7",
-          player1: { name: "A. de Minaur (8)", country: "AU", score: "" },
-          player2: { name: "S. Wawrinka (WC)", country: "CH", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "8",
-          player1: { name: "J. Sinner (4)", country: "IT", score: "" },
-          player2: { name: "S. Korda", country: "US", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "9",
-          player1: { name: "A. Rublev (5)", country: "RU", score: "" },
-          player2: { name: "T. Etcheverry", country: "AR", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "10",
-          player1: { name: "U. Humbert (14)", country: "FR", score: "" },
-          player2: { name: "B. Shelton", country: "US", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "11",
-          player1: { name: "C. Ruud (7)", country: "NO", score: "" },
-          player2: { name: "N. Jarry", country: "CL", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "12",
-          player1: { name: "H. Hurkacz (6)", country: "PL", score: "" },
-          player2: { name: "J. Lehecka", country: "CZ", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "13",
-          player1: { name: "S. Tsitsipas (9)", country: "GR", score: "" },
-          player2: { name: "L. Sonego", country: "IT", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "14",
-          player1: { name: "F. Tiafoe (12)", country: "US", score: "" },
-          player2: { name: "M. Berrettini", country: "IT", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "15",
-          player1: { name: "A. Zverev (10)", country: "DE", score: "" },
-          player2: { name: "S. Baez", country: "AR", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "16",
-          player1: { name: "J. Draper (11)", country: "GB", score: "" },
-          player2: { name: "D. Shapovalov", country: "CA", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "17",
-          player1: { name: "K. Khachanov (16)", country: "RU", score: "" },
-          player2: { name: "C. Norrie", country: "GB", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "18",
-          player1: { name: "B. Coric", country: "HR", score: "" },
-          player2: { name: "A. Davidovich Fokina", country: "ES", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "19",
-          player1: { name: "T. Fritz", country: "US", score: "" },
-          player2: { name: "D. Lajovic", country: "RS", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "20",
-          player1: { name: "A. Bublik", country: "KZ", score: "" },
-          player2: { name: "J. Struff", country: "DE", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "21",
-          player1: { name: "F. Cerundolo", country: "AR", score: "" },
-          player2: { name: "M. Fucsovics", country: "HU", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "22",
-          player1: { name: "R. Bautista Agut", country: "ES", score: "" },
-          player2: { name: "A. Mannarino", country: "FR", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "23",
-          player1: { name: "M. Arnaldi", country: "IT", score: "" },
-          player2: { name: "Y. Hanfmann", country: "DE", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "24",
-          player1: { name: "J. Thompson", country: "AU", score: "" },
-          player2: { name: "N. Borges", country: "PT", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "25",
-          player1: { name: "P. Martinez", country: "ES", score: "" },
-          player2: { name: "M. Giron", country: "US", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "26",
-          player1: { name: "T. Machac", country: "CZ", score: "" },
-          player2: { name: "C. Moutet", country: "FR", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "27",
-          player1: { name: "V. Pospisil", country: "CA", score: "" },
-          player2: { name: "R. Carballes Baena", country: "ES", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "28",
-          player1: { name: "D. Altmaier", country: "DE", score: "" },
-          player2: { name: "M. Cressy", country: "US", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "29",
-          player1: { name: "F. Cobolli", country: "IT", score: "" },
-          player2: { name: "B. Nakashima", country: "US", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "30",
-          player1: { name: "A. Fils", country: "FR", score: "" },
-          player2: { name: "D. Koepfer", country: "DE", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "31",
-          player1: { name: "F. Auger-Aliassime", country: "CA", score: "" },
-          player2: { name: "L. Van Assche", country: "FR", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "32",
-          player1: { name: "J. Munar", country: "ES", score: "" },
-          player2: { name: "R. Berankis", country: "LT", score: "" },
-          selectedPlayer: null,
-        },
-      ],
-    },
-    {
-      name: "Round of 32",
-      matches: [
-        {
-          id: "33",
-          player1: { name: "TBD", country: "", score: "" },
-          player2: { name: "TBD", country: "", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "34",
-          player1: { name: "TBD", country: "", score: "" },
-          player2: { name: "TBD", country: "", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "35",
-          player1: { name: "TBD", country: "", score: "" },
-          player2: { name: "TBD", country: "", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "36",
-          player1: { name: "TBD", country: "", score: "" },
-          player2: { name: "TBD", country: "", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "37",
-          player1: { name: "TBD", country: "", score: "" },
-          player2: { name: "TBD", country: "", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "38",
-          player1: { name: "TBD", country: "", score: "" },
-          player2: { name: "TBD", country: "", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "39",
-          player1: { name: "TBD", country: "", score: "" },
-          player2: { name: "TBD", country: "", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "40",
-          player1: { name: "TBD", country: "", score: "" },
-          player2: { name: "TBD", country: "", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "41",
-          player1: { name: "TBD", country: "", score: "" },
-          player2: { name: "TBD", country: "", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "42",
-          player1: { name: "TBD", country: "", score: "" },
-          player2: { name: "TBD", country: "", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "43",
-          player1: { name: "TBD", country: "", score: "" },
-          player2: { name: "TBD", country: "", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "44",
-          player1: { name: "TBD", country: "", score: "" },
-          player2: { name: "TBD", country: "", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "45",
-          player1: { name: "TBD", country: "", score: "" },
-          player2: { name: "TBD", country: "", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "46",
-          player1: { name: "TBD", country: "", score: "" },
-          player2: { name: "TBD", country: "", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "47",
-          player1: { name: "TBD", country: "", score: "" },
-          player2: { name: "TBD", country: "", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "48",
-          player1: { name: "TBD", country: "", score: "" },
-          player2: { name: "TBD", country: "", score: "" },
-          selectedPlayer: null,
-        },
-      ],
-    },
-    {
-      name: "Round of 16",
-      matches: [
-        {
-          id: "49",
-          player1: { name: "TBD", country: "", score: "" },
-          player2: { name: "TBD", country: "", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "50",
-          player1: { name: "TBD", country: "", score: "" },
-          player2: { name: "TBD", country: "", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "51",
-          player1: { name: "TBD", country: "", score: "" },
-          player2: { name: "TBD", country: "", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "52",
-          player1: { name: "TBD", country: "", score: "" },
-          player2: { name: "TBD", country: "", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "53",
-          player1: { name: "TBD", country: "", score: "" },
-          player2: { name: "TBD", country: "", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "54",
-          player1: { name: "TBD", country: "", score: "" },
-          player2: { name: "TBD", country: "", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "55",
-          player1: { name: "TBD", country: "", score: "" },
-          player2: { name: "TBD", country: "", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "56",
-          player1: { name: "TBD", country: "", score: "" },
-          player2: { name: "TBD", country: "", score: "" },
-          selectedPlayer: null,
-        },
-      ],
-    },
-    {
-      name: "Quarterfinals",
-      matches: [
-        {
-          id: "57",
-          player1: { name: "TBD", country: "", score: "" },
-          player2: { name: "TBD", country: "", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "58",
-          player1: { name: "TBD", country: "", score: "" },
-          player2: { name: "TBD", country: "", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "59",
-          player1: { name: "TBD", country: "", score: "" },
-          player2: { name: "TBD", country: "", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "60",
-          player1: { name: "TBD", country: "", score: "" },
-          player2: { name: "TBD", country: "", score: "" },
-          selectedPlayer: null,
-        },
-      ],
-    },
-    {
-      name: "Semifinals",
-      matches: [
-        {
-          id: "61",
-          player1: { name: "TBD", country: "", score: "" },
-          player2: { name: "TBD", country: "", score: "" },
-          selectedPlayer: null,
-        },
-        {
-          id: "62",
-          player1: { name: "TBD", country: "", score: "" },
-          player2: { name: "TBD", country: "", score: "" },
-          selectedPlayer: null,
-        },
-      ],
-    },
-    {
-      name: "Final",
-      matches: [
-        {
-          id: "63",
-          player1: { name: "TBD", country: "", score: "" },
-          player2: { name: "TBD", country: "", score: "" },
-          selectedPlayer: null,
-        },
-      ],
-    },
-  ],
+    if (setWon(p1Score, p2Score)) {
+      player1SetsWon++;
+    } else if (setWon(p2Score, p1Score)) {
+      player2SetsWon++;
+    }
+
+    if (player1SetsWon === setsToWin) {
+      return player1;
+    }
+    if (player2SetsWon === setsToWin) {
+      return player2;
+    }
+  }
+
+  return null;
 };
 
 type MatchProps = {
-  match: Match;
+  match: MatchType;
   isComplete?: boolean;
   isFinal?: boolean;
   onPlayerSelect?: (player: Player) => void;
@@ -507,22 +125,36 @@ const Match = ({
     }
   };
 
-  // Parse the score string to get individual set scores
-  const parseScore = (scoreStr: string) => {
-    if (!scoreStr) return [];
-    return scoreStr.split(",").map((s) => s.trim());
+  const renderScore = (score: SetScore, setWon: boolean) => {
+    if (!score) return null;
+    return (
+      <View style={styles.scoreWrapper}>
+        <Text
+          style={[
+            styles.playerScore,
+            { color: theme.colors.text, fontWeight: setWon ? "800" : "500" },
+          ]}
+        >
+          {score.gamesWon}
+        </Text>
+        {score.tiebreakPointsWon !== undefined && !setWon && (
+          <Text
+            style={[
+              styles.tiebreakScore,
+              { fontWeight: setWon ? "800" : "500" },
+            ]}
+          >
+            {score.tiebreakPointsWon}
+          </Text>
+        )}
+      </View>
+    );
   };
-
-  const player1Scores = parseScore(match.player1.score);
-  const player2Scores = parseScore(match.player2.score);
-
-  const isPlayer1TBD = match.player1.name === "TBD";
-  const isPlayer2TBD = match.player2.name === "TBD";
 
   return (
     <View
       style={[
-        styles.matchContainer,
+        isFinal ? styles.matchContainerFinal : styles.matchContainer,
         {
           backgroundColor: theme.colors.card,
           borderColor: theme.colors.border,
@@ -531,113 +163,90 @@ const Match = ({
       ]}
     >
       <View style={styles.matchDetails}>
-        <TouchableOpacity
-          style={[styles.playerRow, isPlayer1TBD && styles.playerRowDisabled]}
-          onPress={() => !isPlayer1TBD && handlePlayerPress(match.player1)}
-          disabled={isPlayer1TBD || isLocked}
-        >
-          <View style={styles.playerInfo}>
-            <View
-              style={[
-                styles.selectionBubble,
-                {
-                  borderColor: theme.colors.primary,
-                  backgroundColor:
-                    match.selectedPlayer?.name === match.player1.name
-                      ? theme.colors.primary
-                      : "transparent",
-                },
-              ]}
-            />
-            {match.player1.country ? (
-              <CountryFlag
-                isoCode={match.player1.country}
-                size={16}
-                style={styles.flag}
-              />
-            ) : null}
-            <Text
-              style={[
-                styles.playerName,
-                {
-                  color: isPlayer1TBD
-                    ? theme.colors.secondary
-                    : theme.colors.text,
-                  fontWeight:
-                    match.selectedPlayer?.name === match.player1.name
-                      ? "bold"
-                      : "normal",
-                },
-              ]}
-            >
-              {match.player1.name}
-            </Text>
-          </View>
-          <View style={styles.scoreContainer}>
-            {player1Scores.map((score, index) => (
-              <Text
-                key={index}
-                style={[styles.playerScore, { color: theme.colors.text }]}
-              >
-                {score}
-              </Text>
-            ))}
-          </View>
-        </TouchableOpacity>
+        {[match.player1, match.player2].map((player, idx) => {
+          const isTBD = player.name === "TBD";
+          const isSelected = match.selectedPlayer?.name === player.name;
+          const score = player.score;
+          const otherPlayer =
+            match.player1.name === player.name ? match.player2 : match.player1;
 
-        <TouchableOpacity
-          style={[styles.playerRow, isPlayer2TBD && styles.playerRowDisabled]}
-          onPress={() => !isPlayer2TBD && handlePlayerPress(match.player2)}
-          disabled={isPlayer2TBD || isLocked}
-        >
-          <View style={styles.playerInfo}>
-            <View
-              style={[
-                styles.selectionBubble,
-                {
-                  borderColor: theme.colors.primary,
-                  backgroundColor:
-                    match.selectedPlayer?.name === match.player2.name
-                      ? theme.colors.primary
-                      : "transparent",
-                },
-              ]}
-            />
-            {match.player2.country ? (
-              <CountryFlag
-                isoCode={match.player2.country}
-                size={16}
-                style={styles.flag}
-              />
-            ) : null}
-            <Text
-              style={[
-                styles.playerName,
-                {
-                  color: isPlayer2TBD
-                    ? theme.colors.secondary
-                    : theme.colors.text,
-                  fontWeight:
-                    match.selectedPlayer?.name === match.player2.name
-                      ? "bold"
-                      : "normal",
-                },
-              ]}
+          return (
+            <TouchableOpacity
+              key={player.name + idx}
+              style={[styles.playerRow, isTBD && styles.playerRowDisabled]}
+              onPress={() => !isTBD && handlePlayerPress(player)}
+              disabled={isTBD || isLocked}
             >
-              {match.player2.name}
-            </Text>
-          </View>
-          <View style={styles.scoreContainer}>
-            {player2Scores.map((score, index) => (
-              <Text
-                key={index}
-                style={[styles.playerScore, { color: theme.colors.text }]}
-              >
-                {score}
-              </Text>
-            ))}
-          </View>
-        </TouchableOpacity>
+              <View style={styles.playerInfo}>
+                <View
+                  style={[
+                    styles.selectionBubble,
+                    {
+                      borderColor: theme.colors.primary,
+                      backgroundColor: isSelected
+                        ? theme.colors.primary
+                        : "transparent",
+                    },
+                  ]}
+                />
+                {player.country ? (
+                  <CountryFlag
+                    isoCode={player.country}
+                    size={16}
+                    style={styles.flag}
+                  />
+                ) : null}
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <View style={{ padding: 4 }}>
+                    <Text
+                      style={[
+                        styles.playerName,
+                        {
+                          color: isTBD
+                            ? theme.colors.secondary
+                            : theme.colors.text,
+                          fontWeight: isSelected ? "bold" : "normal",
+                        },
+                      ]}
+                    >
+                      {player.name}
+                    </Text>
+                  </View>
+                  {winner(match.player1, match.player2) === player && (
+                    <View style={{ marginBottom: 2 }}>
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={16}
+                        color="#4CAF50"
+                        style={styles.checkIcon}
+                      />
+                    </View>
+                  )}
+                </View>
+              </View>
+
+              {score?.length > 0 && (
+                <View style={styles.scoreContainer}>
+                  {score.map((_score, index) => {
+                    console.log("Score:", _score);
+                    console.log(
+                      "Other player score:",
+                      otherPlayer.score?.[index]
+                    );
+                    return (
+                      <View key={index} style={styles.setScoreContainer}>
+                        {renderScore(
+                          _score,
+                          setWon(_score, otherPlayer.score?.[index])
+                        )}
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
       </View>
     </View>
   );
@@ -648,8 +257,8 @@ type RoundSelectorProps = {
     name: string;
     matches: Array<{
       id: string;
-      player1: { name: string; country: string; score: string };
-      player2: { name: string; country: string; score: string };
+      player1: { name: string; country: string; score: SetScore[] };
+      player2: { name: string; country: string; score: SetScore[] };
     }>;
   }>;
   selectedRound: number;
@@ -766,6 +375,14 @@ const fetchPredictions = async (tournamentId: string, user: User | null) => {
   }
 };
 
+const getMatchContainerStyle = (isFinal: boolean) => ({
+  borderRadius: 8,
+  overflow: "hidden",
+  padding: 12,
+  width: isFinal ? 400 : 350,
+  alignSelf: "center",
+});
+
 export const PicksScreen = ({
   route,
   navigation,
@@ -808,7 +425,7 @@ export const PicksScreen = ({
         const defaultBracketData = JSON.parse(JSON.stringify(mockBracketData));
         // Initialize selectedPlayer as null for all matches
         defaultBracketData.rounds.forEach((round: Round) => {
-          round.matches.forEach((match: Match) => {
+          round.matches.forEach((match: MatchType) => {
             match.selectedPlayer = null;
           });
         });
@@ -836,7 +453,7 @@ export const PicksScreen = ({
           let currentMatchIndex = 0;
 
           existingPrediction.bracketData.rounds.forEach((round: Round) => {
-            round.matches.forEach((match: Match) => {
+            round.matches.forEach((match: MatchType) => {
               if (match.selectedPlayer) {
                 updatedSelectedPlayers[currentMatchIndex] =
                   match.selectedPlayer;
@@ -870,7 +487,7 @@ export const PicksScreen = ({
 
   // Function to get a random player from a match
   const getRandomPlayerFromMatch = (
-    match: Match
+    match: MatchType
   ): { player: Player; playerId: string } => {
     const isPlayer1 = Math.random() < 0.5;
     return {
@@ -896,7 +513,7 @@ export const PicksScreen = ({
       const currentRound = currentBracketData.rounds[currentRoundIndex];
 
       // For each match in the current round
-      currentRound.matches.forEach((match: Match) => {
+      currentRound.matches.forEach((match: MatchType) => {
         // Skip if both players are TBD
         if (match.player1.name === "TBD" && match.player2.name === "TBD") {
           return;
@@ -918,7 +535,7 @@ export const PicksScreen = ({
 
           // Calculate which match in the next round this player should advance to
           const currentMatchIndex = currentRound.matches.findIndex(
-            (m: Match) => m.id === match.id
+            (m: MatchType) => m.id === match.id
           );
           const nextMatchIndex = Math.floor(currentMatchIndex / 2);
 
@@ -976,7 +593,7 @@ export const PicksScreen = ({
       // Find the match and update its selectedPlayer
       let currentMatchIndex = 0;
       newBracketData.rounds.forEach((round: Round) => {
-        round.matches.forEach((match: Match) => {
+        round.matches.forEach((match: MatchType) => {
           if (currentMatchIndex === matchIndex) {
             match.selectedPlayer = player;
           }
@@ -1060,6 +677,8 @@ export const PicksScreen = ({
       Alert.alert("Error", "Failed to save your picks. Please try again.");
     }
   };
+
+  const isFinal = selectedRound === bracketData.rounds.length - 1;
 
   return (
     <SafeAreaView
@@ -1186,25 +805,47 @@ export const PicksScreen = ({
           </View>
           <View style={styles.matchesList}>
             {bracketData.rounds[selectedRound].matches.map((match, index) => {
-              const matchIndex =
-                bracketData.rounds
-                  .slice(0, selectedRound)
-                  .reduce((acc, round) => acc + round.matches.length, 0) +
-                index;
+              if (index % 2 !== 0) return null; // Render every other match as a pair start
+
+              const nextMatch =
+                bracketData.rounds[selectedRound].matches[index + 1];
+              const matchIndexOffset = bracketData.rounds
+                .slice(0, selectedRound)
+                .reduce((acc, round) => acc + round.matches.length, 0);
+
               return (
-                <Match
-                  key={match.id}
-                  match={match}
-                  isComplete={
-                    match.player1.score.includes("6-") ||
-                    match.player2.score.includes("6-")
-                  }
-                  isFinal={selectedRound === bracketData.rounds.length - 1}
-                  onPlayerSelect={(player) =>
-                    handlePlayerSelect(player, matchIndex)
-                  }
-                  isLocked={isLocked}
-                />
+                <View key={`pair-${index}`} style={styles.matchPairContainer}>
+                  <View style={styles.matchPairContent}>
+                    <Match
+                      match={match}
+                      isComplete={isComplete(match.player1, match.player2)}
+                      isFinal={isFinal}
+                      onPlayerSelect={(player) =>
+                        handlePlayerSelect(player, matchIndexOffset + index)
+                      }
+                      isLocked={isLocked}
+                    />
+                    {nextMatch && (
+                      <Match
+                        match={nextMatch}
+                        isComplete={isComplete(
+                          nextMatch.player1,
+                          nextMatch.player2
+                        )}
+                        isFinal={isFinal}
+                        onPlayerSelect={(player) =>
+                          handlePlayerSelect(
+                            player,
+                            matchIndexOffset + index + 1
+                          )
+                        }
+                        isLocked={isLocked}
+                      />
+                    )}
+                  </View>
+                  {!isFinal && <View style={styles.rightBracketLine} />}
+                  {!isFinal && <View style={styles.rightHorizontalLine} />}
+                </View>
               );
             })}
           </View>
@@ -1275,19 +916,28 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   roundContainer: {
-    padding: 16,
+    margin: 16,
   },
   roundTitle: {
     fontSize: 16,
     fontWeight: "bold",
   },
   matchesList: {
-    gap: 16,
+    gap: 0,
   },
   matchContainer: {
     borderRadius: 8,
     overflow: "hidden",
     padding: 12,
+    width: 350,
+    alignSelf: "center",
+  },
+  matchContainerFinal: {
+    borderRadius: 8,
+    overflow: "hidden",
+    padding: 12,
+    width: 400,
+    alignSelf: "center",
   },
   matchDetails: {
     gap: 8,
@@ -1323,11 +973,23 @@ const styles = StyleSheet.create({
     gap: 8,
     alignItems: "center",
   },
+  scoreWrapper: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    position: "relative",
+  },
   playerScore: {
     fontSize: 14,
-    fontWeight: "500",
-    minWidth: 20,
     textAlign: "center",
+  },
+  tiebreakScore: {
+    fontSize: 10,
+    marginLeft: 0,
+    marginTop: -6,
+  },
+  setScoreContainer: {
+    width: 20,
+    alignItems: "center",
   },
   selectedPlayer: {
     backgroundColor: "rgba(0, 122, 255, 0.1)",
@@ -1385,5 +1047,59 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: 0,
     top: 28,
+  },
+  checkIcon: {
+    marginLeft: 8,
+    marginTop: 2,
+  },
+  matchPair: {
+    flexDirection: "column",
+    alignItems: "flex-start",
+    position: "relative",
+    paddingRight: 24,
+  },
+  matchWithLine: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 8, // add spacing between matches
+  },
+  horizontalLine: {
+    width: 24,
+    height: 2,
+    backgroundColor: "#ccc",
+    marginLeft: 4,
+  },
+  verticalLine: {
+    width: 2,
+    height: 135, // longer to span the spacing
+    backgroundColor: "#ccc",
+    position: "absolute",
+    left: "100%",
+    marginTop: 66,
+    marginLeft: 8, // half of height to center between matches
+  },
+  matchPairContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+    width: 450, // enough to hit the right edge of the screen
+  },
+  matchPairContent: {
+    gap: 24, // spacing between matches in a pair
+  },
+  rightBracketLine: {
+    borderTopWidth: 2,
+    borderRightWidth: 2,
+    borderBottomWidth: 2,
+    borderLeftWidth: 0,
+    borderColor: "#ccc",
+    height: 135,
+    width: 33,
+  },
+  rightHorizontalLine: {
+    height: 2,
+    backgroundColor: "#ccc",
+    flex: 1,
+    marginLeft: 0,
   },
 });
